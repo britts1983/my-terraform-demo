@@ -1,65 +1,32 @@
-name: Infra (TF + Ansible)
+name: Infra
 
 on:
-  push:
-    branches: [ main ]            # push = plan only (no changes)
-  workflow_dispatch:               # manual = plan + apply
+  push: { branches: [ main ] }
+  workflow_dispatch: {}
 
 jobs:
-  terraform:
+  tf:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: terraform
+    defaults: { run: { working-directory: terraform } }
     steps:
       - uses: actions/checkout@v4
-
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-1
-
       - uses: hashicorp/setup-terraform@v3
+      - run: terraform init -input=false
+      - run: terraform fmt -recursive
+      - run: terraform validate
+      - run: terraform plan -input=false
+      - if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: terraform apply -auto-approve -input=false
 
-      # Pick a bucket name: use repo var BUCKET_NAME if set; else auto-generate a unique one
-      - name: Set BUCKET_NAME
-        run: |
-          if [ -n "${{ vars.BUCKET_NAME }}" ]; then
-            echo "BUCKET_NAME=${{ vars.BUCKET_NAME }}" >> $GITHUB_ENV
-          else
-            # aws bucket rules: lowercase, <=63 chars, must be globally unique
-            echo "BUCKET_NAME=tf-${GITHUB_REPOSITORY_OWNER,,}-${GITHUB_RUN_ID}" >> $GITHUB_ENV
-          fi
-          echo "Using bucket: $BUCKET_NAME"
-
-      - name: Init
-        run: terraform init -input=false
-
-      - name: Fmt
-        run: terraform fmt -recursive
-
-      - name: Validate
-        run: terraform validate
-
-      - name: Plan
-        run: terraform plan -input=false -var="bucket_name=${{ env.BUCKET_NAME }}"
-
-      - name: Apply (manual runs only)
-        if: ${{ github.event_name == 'workflow_dispatch' }}
-        run: terraform apply -auto-approve -input=false -var="bucket_name=${{ env.BUCKET_NAME }}"
-
-      - name: Show outputs (after apply)
-        if: ${{ github.event_name == 'workflow_dispatch' }}
-        run: terraform output || true
-
-  # Keep this if you want a quick syntax check; otherwise delete this whole job
   ansible:
     runs-on: ubuntu-latest
-    needs: terraform
-    defaults:
-      run:
-        working-directory: ansible
+    needs: tf
+    defaults: { run: { working-directory: ansible } }
     steps:
       - uses: actions/checkout@v4
       - run: |
