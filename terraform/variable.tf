@@ -4,6 +4,6 @@ variable "region" {
 }
 
 variable "bucket_name" {
-  type        = string
+  type    = string
   default = "britto-demo-bucket-20250811" # change to something unique
 }
