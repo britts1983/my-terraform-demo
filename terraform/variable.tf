@@ -4,6 +4,6 @@ variable "region" {
 }
 
 variable "bucket_name" {
-  type = string
-  # Example: "britto-demo-20250811-abc"
+  type        = string
+  description = "Globally-unique S3 bucket name (e.g., britto-demo-20250811-xyz)"
 }

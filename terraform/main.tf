@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "6.8.0"
+      version = "= 6.8.0"
     }
   }
 }
@@ -18,6 +18,7 @@ resource "aws_s3_bucket" "b" {
 
 resource "aws_s3_bucket_versioning" "v" {
   bucket = aws_s3_bucket.b.id
-  versioning_configuration { status = "Enabled" }
+  versioning_configuration {
+    status = "Enabled"
+  }
 }
-
