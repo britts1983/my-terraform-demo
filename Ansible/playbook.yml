@@ -1,0 +1,22 @@
+---
+- hosts: web
+  become: true
+  vars:
+    http_port: 80
+    
+  tasks:
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Start and enable nginx
+      service:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: Show HTTP port
+      debug:
+        msg: "Nginx is running on port {{ http_port }}"
