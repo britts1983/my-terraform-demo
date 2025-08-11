@@ -5,5 +5,5 @@ variable "region" {
 
 variable "bucket_name" {
   type        = string
-  description = "Globally-unique S3 bucket name (e.g., britto-demo-20250811-xyz)"
+  default = "britto-demo-bucket-20250811" # change to something unique
 }
