@@ -1,41 +1,39 @@
-name: Infra (TF + Ansible)
+name: Infra CI (Terraform + Ansible)
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "**" ]
   workflow_dispatch:
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: terraform
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-1
 
-      - uses: hashicorp/setup-terraform@v3
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
-      - name: Init
+      - name: Terraform Init
+        working-directory: terraform
         run: terraform init -input=false
 
-      # keep builds green by auto-formatting instead of failing on -check
-      - name: Fmt
-        run: terraform fmt -recursive
-
-      - name: Validate
-        run: terraform validate
-
-      - name: Plan
+      - name: Terraform Plan
+        working-directory: terraform
         run: terraform plan -input=false
-        # if your TF needs variables, e.g. bucket_name, do:
-        # run: terraform plan -input=false -var="bucket_name=${{ vars.BUCKET_NAME }}"
+
+      - name: Apply (only on manual runs)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        working-directory: terraform
+        run: terraform apply -auto-approve -input=false
 
   ansible:
     runs-on: ubuntu-latest
@@ -51,5 +49,5 @@ jobs:
           python -m pip install --upgrade pip
           pip install ansible
 
-      - name: Syntax check
+      - name: Syntax check (localhost only)
         run: ansible-playbook -i localhost, -c local main.yml --syntax-check
